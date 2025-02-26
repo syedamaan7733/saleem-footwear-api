@@ -11,6 +11,19 @@ const setSchema = new mongoose.Schema({
   },
   _id: false,
 });
+
+const colorStockSchema = new mongoose.Schema({
+  color: {
+    type: String,
+    required: [true],
+  },
+  inStock: {
+    type: Boolean,
+    default: true,
+  },
+  _id: false,
+});
+
 // Define a Product schema
 const productSchema = new mongoose.Schema(
   {
@@ -37,6 +50,9 @@ const productSchema = new mongoose.Schema(
       type: Map,
       of: [String],
       required: true,
+    },
+    colorsStock: {
+      type: [colorStockSchema],
     }, // An array of available colors
     //   size: [String], // An array of available sizes
     price: {
@@ -64,6 +80,29 @@ const productSchema = new mongoose.Schema(
   }
 );
 
+// Middleware to sync the colorStock on creation and updatation.
+productSchema.pre("save", function (next) {
+  if (!this.isModified("colors")) return next(); // only trigger during the color changes or creation
+
+  const colorKeys = Array.from(this.colors.keys());
+  const existingStockMap = new Map(
+    this.colorsStock.map(({ color, inStock }) => [color, inStock])
+  );
+
+  // creating a new colorStock
+  this.colorsStock = colorKeys.map((color) => ({
+    color,
+    inStock: existingStockMap.has(color) ? existingStockMap.get(color) : true,
+  }));
+  console.log("-------------------------------------------");
+  console.log("colorKeys:", colorKeys);
+  console.log("existingStockMap", existingStockMap);
+  console.log("colorStock", this.colorsStock);
+  console.log("colors", this.colors);
+
+  console.log("-------------------------------------------");
+  next();
+});
 // Create the Product model
 
 module.exports = mongoose.model("Product", productSchema);

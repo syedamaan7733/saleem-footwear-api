@@ -64,18 +64,24 @@ const getSingleProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   const { id: productId } = req.params;
-  const product = await Product.updateOne(
-    { _id: productId },
-    { $set: req.body },
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
+  let product = await Product.findById(productId);
   if (!product) {
-    throw new CustomError.NotFoundError(`No product wth Id: ${productId}`);
+    throw new CustomError.NotFoundError(`No product with ID: ${productId}`);
   }
-  res.status(StatusCodes.OK).json({ product });
+
+  // Update product fields manually
+  Object.keys(req.body).forEach((key) => {
+    product[key] = req.body[key];
+  });
+
+  // Save the product (triggers `pre("save")` middleware)
+  await product.save();
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: `Product with ID ${productId} has been updated successfully.`,
+    data: product,
+  });
 };
 
 const deleteProduct = async (req, res) => {

@@ -27,7 +27,7 @@ app.use(cookieParser(process.env.JWT_SECRET));
 // Apply rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 150,
 });
 app.use(limiter);
 
@@ -64,6 +64,8 @@ const start = async () => {
   try {
     await connectDB(process.env.MONGO_URI);
     app.listen(port, () => {
+      console.log("db is live");
+
       console.log(`Server is listening on PORT:${port}`);
     });
   } catch (error) {
