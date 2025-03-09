@@ -8,7 +8,7 @@ const authenticateUser = async (req, res, next) => {
   //   body: { token },
   // } = req.body;
   // console.log(req.headers);
-  const token = req.headers["authorization"]?.split(" ")[1];
+  const token = req.headers["authorization"]?.split(" ")[1] || req.cookies?.access_token;
   // console.log(token);
   // const token = req.body.token;
   // console.log(token);

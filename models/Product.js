@@ -94,13 +94,13 @@ productSchema.pre("save", function (next) {
     color,
     inStock: existingStockMap.has(color) ? existingStockMap.get(color) : true,
   }));
-  console.log("-------------------------------------------");
-  console.log("colorKeys:", colorKeys);
-  console.log("existingStockMap", existingStockMap);
-  console.log("colorStock", this.colorsStock);
-  console.log("colors", this.colors);
+  // console.log("-------------------------------------------");
+  // console.log("colorKeys:", colorKeys);
+  // console.log("existingStockMap", existingStockMap);
+  // console.log("colorStock", this.colorsStock);
+  // console.log("colors", this.colors);
 
-  console.log("-------------------------------------------");
+  // console.log("-------------------------------------------");
   next();
 });
 // Create the Product model

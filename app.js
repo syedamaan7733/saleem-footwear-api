@@ -27,7 +27,7 @@ app.use(cookieParser(process.env.JWT_SECRET));
 // Apply rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 150,
+  max: 200,
 });
 app.use(limiter);
 

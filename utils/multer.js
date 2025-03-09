@@ -54,7 +54,13 @@ const uploadToCloudinary = (file, retryCount = 3) => {
   return new Promise((resolve, reject) => {
     const attemptUpload = (attemptsLeft) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: "salim_api_product_images", timeout: 20000 },
+        {
+          folder:
+            process.env.DEV === "development"
+              ? "saleem-test"
+              : "salim_api_product_images",
+          timeout: 20000,
+        },
         (error, result) => {
           if (error) {
             if (attemptsLeft > 0) {
@@ -179,26 +185,31 @@ module.exports = router;
 // );
 
 // if there is single array of images
-// router.post("/upload-img", upload.array("images", 10), async (req, res) => {
-//   try {
-//     const uploadPromises = req.files.map((file) => {
-//       return uploadToCloudinary(file);
-//     });
+router.post(
+  "/upload-img-test",
+  upload.array("images", 25),
+  async (req, res) => {
+    try {
+      const uploadPromises = req.files.map((file) => {
+        return uploadToCloudinary(file);
+      });
 
-//     const uploadResult = await Promise.all(uploadPromises);
+      const uploadResult = await Promise.all(uploadPromises);
+      // console.log(uploadResult);
 
-//     const uploadImages = uploadResult.map((result) => result.secure_url);
+      const uploadImages = uploadResult.map((result) => result);
 
-//     res.status(StatusCodes.OK).json({
-//       message: "Images uploaded successfully",
-//       images: uploadImages,
-//     });
-//   } catch (error) {
-//     res
-//       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-//       .json({ message: "Error uploading images", error: error.message });
-//   }
-// });
+      res.status(StatusCodes.OK).json({
+        message: "Images uploaded successfully",
+        images: uploadImages,
+      });
+    } catch (error) {
+      res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json({ message: "Error uploading images", error: error.message });
+    }
+  }
+);
 
 // Configure Multer to store files in public/data/images
 // const storage = multer.diskStorage({

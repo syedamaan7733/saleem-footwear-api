@@ -35,7 +35,7 @@ const getAllProducts = async (req, res) => {
   const products = await Product.find({})
     .sort({ createdAt: -1 })
     .select(
-      "brand colors inStock price images itemSet material category gender article createdAt"
+      "brand colors inStock price images itemSet colorsStock material category gender article createdAt"
     )
     .skip(skip) // Skip the required number of products
     .limit(limitNumber); // Limit the number of products
@@ -59,6 +59,8 @@ const getSingleProduct = async (req, res) => {
   if (!product) {
     throw new CustomError.NotFoundError(`No product with id: ${productId}`);
   }
+  // console.log(product);
+
   res.status(StatusCodes.OK).json({ product });
 };
 
