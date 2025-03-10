@@ -36,7 +36,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: multer.memoryStorage(), // Store files in memory instead of disk
-  limits: { fileSize: 7 * 1024 * 1024 }, // Limit file size to 7MB
+  limits: { fileSize: 20 * 1024 * 1024 }, // Limit file size to 20MB
 });
 
 // Utility function to delete temporary files after upload
