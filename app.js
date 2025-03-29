@@ -21,7 +21,25 @@ app.use(express.json());
 app.use(morgan("tiny"));
 app.set("trust proxy", 1);
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://192.168.162.84:5173",
+      "http://172.18.128.1:5173",
+      "https://salimfootwear.com",
+    ],
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true,
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Accept",
+      "X-Requested-With",
+    ],
+  })
+);
 app.use(cookieParser(process.env.JWT_SECRET));
 
 // Apply rate limiting
@@ -59,7 +77,7 @@ app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
 // Start server
-const port = process.env.PORT || 7000;
+const port = process.env.PORT || 8000;
 const start = async () => {
   try {
     await connectDB(process.env.MONGO_URI);
