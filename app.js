@@ -29,6 +29,9 @@ app.use(
       "http://192.168.162.84:5173",
       "http://172.18.128.1:5173",
       "https://salimfootwear.com",
+
+      // just for assignment sake
+      "https://workholi.netlify.app",
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
