@@ -32,6 +32,7 @@ app.use(
 
       // just for assignment sake
       "https://workholi.netlify.app",
+      "neon-kheer-10511f.netlify.app",
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
