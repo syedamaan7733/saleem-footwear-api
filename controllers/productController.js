@@ -297,6 +297,95 @@ const searchArticle = async (req, res) => {
   }
 };
 
+/**
+ * Get all unique brands sorted by latest product
+ * Returns brands from products sorted by most recently created product
+ * 
+ * @route GET /api/v1/products/brands
+ * @returns {Object} { success: boolean, count: number, brands: Array<string> }
+ */
+const searchBrand = async (req, res) => {
+  try {
+    // Aggregate to get unique brands with their latest product date
+    const brands = await Product.aggregate([
+      // Group by brand and find the latest product for each
+      {
+        $group: {
+          _id: "$brand",
+          latestProduct: { $max: "$createdAt" },
+        },
+      },
+      
+      // Sort by latest product date (most recent first)
+      { $sort: { latestProduct: -1 } },
+      
+      // Project only the brand name
+      { $project: { _id: 0, brand: "$_id" } },
+    ]);
+
+    // Extract brand names into a simple array
+    const brandList = brands.map((b) => b.brand);
+
+    res.status(200).json({
+      success: true,
+      count: brandList.length,
+      brands: brandList,
+    });
+  } catch (error) {
+    console.error("Error fetching brands:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching brands",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get all unique materials sorted by latest product
+ * Returns materials from products sorted by most recently created product
+ * Filters out null/undefined materials
+ * 
+ * @route GET /api/v1/products/materials
+ * @returns {Object} { success: boolean, count: number, materials: Array<string> }
+ */
+const searchMaterial = async (req, res) => {
+  try {
+    // Aggregate to get unique materials with their latest product date
+    const materials = await Product.aggregate([
+      // Group by material and find the latest product for each
+      {
+        $group: {
+          _id: "$material",
+          latestProduct: { $max: "$createdAt" },
+        },
+      },
+      
+      // Sort by latest product date (most recent first)
+      { $sort: { latestProduct: -1 } },
+      
+      // Project only the material name
+      { $project: { _id: 0, material: "$_id" } },
+    ]);
+
+    // Extract material names and filter out null/undefined values
+    const materialList = materials.map((m) => m.material).filter(Boolean);
+
+    res.status(200).json({
+      success: true,
+      count: materialList.length,
+      materials: materialList,
+    });
+  } catch (error) {
+    console.error("Error fetching materials:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching materials",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createProduct,
   getAllProducts,
@@ -307,4 +396,6 @@ module.exports = {
   searchCategory,
   searchProductsByCategory,
   querySearch,
+  searchBrand,
+  searchMaterial,
 };
