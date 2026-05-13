@@ -95,9 +95,12 @@ const orderHistory = async (req, res) => {
     const countOrder = orders.length;
 
     if (orders.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ success: true, msg: "No order found." });
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        data: [],
+        totalOrder: 0,
+        msg: "No order found.",
+      });
     } else {
       // const orderCount = await Order.countDocuments(userId);
       // console.log(orderCount);
@@ -135,4 +138,30 @@ const getAllOrders = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, orderHistory, updateOrderStatus, getAllOrders };
+const getSingleOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const userId = req.user.userId;
+
+  const order = await Order.findOne({ _id: orderId, userId })
+    .populate({
+      path: "items.productId",
+    })
+    .populate({
+      path: "userId",
+      select: "name phone shopName address",
+    });
+
+  if (!order) {
+    throw new CustomError.NotFoundError(`No order with id: ${orderId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ success: true, data: order });
+};
+
+module.exports = {
+  createOrder,
+  orderHistory,
+  updateOrderStatus,
+  getAllOrders,
+  getSingleOrder,
+};

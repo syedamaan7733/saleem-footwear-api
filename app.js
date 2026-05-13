@@ -21,19 +21,37 @@ app.use(express.json());
 app.use(morgan("tiny"));
 app.set("trust proxy", 1);
 app.use(helmet());
+const defaultOrigins = [
+  "http://localhost:8081",
+  "http://localhost:8080",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://192.168.162.84:5173",
+  "http://172.18.128.1:5173",
+  "https://salimfootwear.com",
+  "https://workholi.netlify.app",
+  "https://neon-kheer-10511f.netlify.app",
+];
+
+const extraOrigins = process.env.CORS_EXTRA_ORIGINS
+  ? process.env.CORS_EXTRA_ORIGINS.split(",").map((o) => o.trim())
+  : [];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://192.168.162.84:5173",
-      "http://172.18.128.1:5173",
-      "https://salimfootwear.com",
-
-      // just for assignment sake
-      "https://workholi.netlify.app",
-      "https://neon-kheer-10511f.netlify.app",
-    ],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (defaultOrigins.includes(origin) || extraOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      if (/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:(8081|8082|19000|19006)$/.test(origin)) {
+        return callback(null, true);
+      }
+      if (/^http:\/\/localhost:\d+$/.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
     allowedHeaders: [

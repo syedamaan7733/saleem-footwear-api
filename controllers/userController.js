@@ -19,4 +19,12 @@ const getSingleUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user });
 };
 
-module.exports = { getAllUsers, getSingleUser };
+const getCurrentUser = async (req, res) => {
+  const user = await User.findOne({ _id: req.user.userId }).select("-password");
+  if (!user) {
+    throw new CustomError.NotFoundError("No user found for this token");
+  }
+  res.status(StatusCodes.OK).json({ user });
+};
+
+module.exports = { getAllUsers, getSingleUser, getCurrentUser };

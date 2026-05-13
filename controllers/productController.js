@@ -21,33 +21,42 @@ const createProduct = async (req, res) => {
 //   res.status(StatusCodes.OK).json({ count: products.length, products });
 // };
 const getAllProducts = async (req, res) => {
-  // Extract page and limit from query parameters, provide default values
-  const { page = 1, limit = 10 } = req.query;
+  const {
+    page = 1,
+    limit = 10,
+    category,
+    gender,
+    brand,
+    material,
+    inStock,
+  } = req.query;
 
-  // Convert page and limit to numbers (they come as strings in query)
   const pageNumber = parseInt(page, 10);
   const limitNumber = parseInt(limit, 10);
-
-  // Calculate the number of products to skip
   const skip = (pageNumber - 1) * limitNumber;
 
-  // Fetch the products with pagination
-  const products = await Product.find({})
+  const filter = {};
+  if (category) filter.category = category;
+  if (gender) filter.gender = gender;
+  if (brand) filter.brand = new RegExp(brand, "i");
+  if (material) filter.material = material;
+  if (inStock === "true" || inStock === "1") filter.inStock = true;
+  if (inStock === "false" || inStock === "0") filter.inStock = false;
+
+  const products = await Product.find(filter)
     .sort({ createdAt: -1 })
     .select(
       "brand colors inStock price images itemSet colorsStock material category gender article createdAt"
     )
-    .skip(skip) // Skip the required number of products
-    .limit(limitNumber); // Limit the number of products
+    .skip(skip)
+    .limit(limitNumber);
 
-  // Get the total count of products (for pagination metadata)
-  const totalProducts = await Product.countDocuments({});
+  const totalProducts = await Product.countDocuments(filter);
 
-  // Send the response with pagination info
   res.status(StatusCodes.OK).json({
     count: products.length,
     totalProducts,
-    totalPages: Math.ceil(totalProducts / limitNumber),
+    totalPages: Math.ceil(totalProducts / limitNumber) || 1,
     currentPage: pageNumber,
     products,
   });
@@ -181,24 +190,34 @@ const searchCategory = async (req, res) => {
 };
 
 const searchProductsByCategory = async (req, res) => {
-  const { category } = req.query; // Use req.query to get the category
-  console.log(category);
+  const { category, gender, page = 1, limit = 20, inStock } = req.query;
 
   try {
-    // Find all products in the Product collection that match the given category
-    // Sort by 'createdAt' field in descending order to get the latest items first
-    const products = await Product.find({ category: category }).sort({
-      createdAt: -1,
-    });
-    console.log(products);
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const skip = (pageNumber - 1) * limitNumber;
 
-    // Send the list of products as a response
+    const filter = { category };
+    if (gender) filter.gender = gender;
+    if (inStock === "true" || inStock === "1") filter.inStock = true;
+    if (inStock === "false" || inStock === "0") filter.inStock = false;
+
+    const products = await Product.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNumber);
+
+    const totalProducts = await Product.countDocuments(filter);
+
     res.status(200).json({
       success: true,
-      products: products,
+      products,
+      count: products.length,
+      totalProducts,
+      totalPages: Math.ceil(totalProducts / limitNumber) || 1,
+      currentPage: pageNumber,
     });
   } catch (error) {
-    // Handle errors
     console.error("Error fetching products:", error);
     res.status(500).json({
       success: false,
@@ -396,6 +415,7 @@ module.exports = {
   searchCategory,
   searchProductsByCategory,
   querySearch,
+  searchArticle,
   searchBrand,
   searchMaterial,
 };

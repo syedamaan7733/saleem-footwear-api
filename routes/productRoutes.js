@@ -8,6 +8,7 @@ const {
   deleteProduct,
   searchBrand,
   searchMaterial,
+  searchArticle,
 } = require("../controllers/productController");
 
 const {
@@ -30,6 +31,7 @@ router
 // Filter routes (must come before /:id to avoid conflicts)
 router.route("/brands").get(searchBrand);
 router.route("/materials").get(searchMaterial);
+router.route("/article").get(searchArticle);
 
 // Single product routes
 router

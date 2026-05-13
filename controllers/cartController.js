@@ -64,10 +64,16 @@ const getCart = async (req, res) => {
   const userId = req.user.userId;
 
   // Retrieve the cart and populate the productId
-  const cart = await Cart.findOne({ userId }).populate("items.productId");
+  let cart = await Cart.findOne({ userId }).populate("items.productId");
 
   if (!cart) {
-    throw new CustomError.NotFoundError("Cart not found");
+    cart = {
+      userId,
+      items: [],
+      totalPrice: 0,
+      totalItems: 0,
+    };
+    return res.status(StatusCodes.OK).json({ data: cart });
   }
 
   // Sort the items within the cart by the createdAt field
@@ -106,36 +112,41 @@ const removeitem = async (req, res) => {
   cart.totalItems -= cartItem.quantity;
 
   await cart.save();
-  res.status(StatusCodes.OK).json({ data: "item Romoved", cart });
+  const updatedCart = await Cart.findOne({ userId }).populate("items.productId");
+  res.status(StatusCodes.OK).json({ success: true, data: updatedCart });
 };
 
 const updateCartItem = async (req, res) => {
   const userId = req.user.userId;
   const cartItemId = req.params.id;
   const { quantity, itemSet, color } = req.body;
-  // console.log(userId, cartItemId, req.body);
 
   try {
-    // Find the user's cart
     const cart = await Cart.findOne({ userId });
-    // console.log(cart);
 
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
 
-    // Find the cart item
     const cartItem = cart.items.id(cartItemId);
-    // console.log(cartItem);
 
     if (!cartItem) {
       return res.status(404).json({ message: "CartItem not found" });
     }
-    // Update only the fields that are provided
+
+    const product = await Product.findById(cartItem.productId);
+    if (!product) {
+      throw new CustomError.NotFoundError("Product not found");
+    }
+
     if (quantity !== undefined) {
-      cartItem.quantity += quantity;
-      cartItem.price =
-        (cartItem.price / cartItem.quantity) * (cartItem.quantity + quantity); // Adjust the price based on the new quantity
+      const nextQty = Number(quantity);
+      if (Number.isNaN(nextQty) || nextQty < 1) {
+        cart.items.pull(cartItemId);
+      } else {
+        cartItem.quantity = nextQty;
+        cartItem.price = product.price * nextQty;
+      }
     }
     if (itemSet !== undefined) {
       cartItem.itemSet = itemSet;
@@ -144,7 +155,6 @@ const updateCartItem = async (req, res) => {
       cartItem.color = color;
     }
 
-    // Recalculate the cart total
     cart.totalPrice = cart.items.reduce((total, item) => total + item.price, 0);
     cart.totalItems = cart.items.reduce(
       (total, item) => total + item.quantity,
@@ -152,9 +162,12 @@ const updateCartItem = async (req, res) => {
     );
 
     await cart.save();
-    res
-      .status(StatusCodes.OK)
-      .json({ msg: "cart have been updated", success: true, data: cartItem });
+    const updatedCart = await Cart.findOne({ userId }).populate("items.productId");
+    res.status(StatusCodes.OK).json({
+      msg: "cart have been updated",
+      success: true,
+      data: updatedCart,
+    });
   } catch (error) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
