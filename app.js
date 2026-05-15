@@ -28,6 +28,8 @@ const defaultOrigins = [
   "http://localhost:5174",
   "http://192.168.162.84:5173",
   "http://172.18.128.1:5173",
+  "http://110.224.164.18:8081",
+  "exp://110.224.164.18:8081",
   "https://salimfootwear.com",
   "https://workholi.netlify.app",
   "https://neon-kheer-10511f.netlify.app",
