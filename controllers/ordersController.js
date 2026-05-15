@@ -8,32 +8,32 @@ const createOrder = async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    // Find the user's cart
-    const cart = await Cart.findOne({ userId });
+    const cart = await Cart.findOne({ userId }).populate("items.productId");
 
     if (!cart || cart.items.length === 0) {
       throw new CustomError.NotFoundError("Cart is empty or not found", 404);
     }
 
-    // Create an order
     const newOrder = await Order.create({
       userId: cart.userId,
       items: cart.items,
       totalPrice: cart.totalPrice,
       totalItems: cart.totalItems,
     });
-    console.log(newOrder);
 
-    // Clear the cart after order is created
     await Cart.findOneAndUpdate(
       { userId },
       { items: [], totalPrice: 0, totalItems: 0 }
     );
 
+    const populatedOrder = await Order.findById(newOrder._id)
+      .populate("items.productId", "brand article category gender")
+      .populate("userId", "name phone shopName address");
+
     res.status(StatusCodes.CREATED).json({
       success: true,
       msg: "Order have beeen created",
-      data: newOrder,
+      data: populatedOrder,
     });
   } catch (error) {
     console.log(error);
