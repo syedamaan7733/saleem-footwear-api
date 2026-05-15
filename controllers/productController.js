@@ -1,6 +1,13 @@
 const Product = require("../models/Product");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("../errors");
+const {
+  CANONICAL,
+  normalizeGender,
+  buildGenderFilter,
+  buildGenderDistinctFilter,
+} = require("../utils/normalizeGender");
+const { buildBrandFilter } = require("../utils/normalizeBrand");
 
 const createProduct = async (req, res) => {
   const items = req.body;
@@ -37,8 +44,10 @@ const getAllProducts = async (req, res) => {
 
   const filter = {};
   if (category) filter.category = category;
-  if (gender) filter.gender = gender;
-  if (brand) filter.brand = new RegExp(brand, "i");
+  const genderFilter = buildGenderFilter(gender);
+  if (genderFilter) Object.assign(filter, genderFilter);
+  const brandFilter = buildBrandFilter(brand);
+  if (brandFilter) Object.assign(filter, brandFilter);
   if (material) filter.material = material;
   if (inStock === "true" || inStock === "1") filter.inStock = true;
   if (inStock === "false" || inStock === "0") filter.inStock = false;
@@ -144,38 +153,35 @@ const deleteProduct = async (req, res) => {
 // };
 
 const searchCategory = async (req, res) => {
-  const { gender } = req.query;
+  const { gender: genderRaw } = req.query;
+  const canonicalGender = normalizeGender(genderRaw);
+  const genderDistinctFilter = buildGenderDistinctFilter(genderRaw);
 
   try {
-    let categories;
+    const categories = await Product.distinct(
+      "category",
+      genderDistinctFilter
+    );
 
-    // Step 1: Fetch distinct categories
-    if (!gender) {
-      categories = await Product.distinct("category");
-    } else {
-      categories = await Product.distinct("category", { gender: gender });
-    }
-
-    // Step 2: Fetch one product image for each category
     const categoryWithImages = await Promise.all(
       categories.map(async (category) => {
-        // Find one product with the matching category
-        const product = await Product.findOne({ category })
+        const productQuery = { category, ...genderDistinctFilter };
+        const product = await Product.findOne(productQuery)
           .select("category images")
-          .sort({ createdAt: -1 }); // Sorting by creation date to get the latest product
+          .sort({ createdAt: -1 });
 
         return {
           category,
-          image: product.images[0], // Take the first image (you can adjust if needed)
+          image: product?.images?.[0] ?? null,
         };
       })
     );
 
-    // Step 3: Send the response with categories and images
     res.status(200).json({
       success: true,
       data: categoryWithImages,
-      totalCategories: `Total category in ${gender || "all"} section: ${
+      gender: canonicalGender,
+      totalCategories: `Total category in ${canonicalGender || "all"} section: ${
         categories.length
       }`,
     });
@@ -198,7 +204,8 @@ const searchProductsByCategory = async (req, res) => {
     const skip = (pageNumber - 1) * limitNumber;
 
     const filter = { category };
-    if (gender) filter.gender = gender;
+    const genderFilter = buildGenderFilter(gender);
+    if (genderFilter) Object.assign(filter, genderFilter);
     if (inStock === "true" || inStock === "1") filter.inStock = true;
     if (inStock === "false" || inStock === "0") filter.inStock = false;
 
@@ -270,6 +277,47 @@ const searchProduct = async (req, res) => {
   }
 };
 
+const GENDER_LABELS = {
+  male: "Men's",
+  female: "Women's",
+  kids: "Kids'",
+  unisex: "Unisex",
+};
+
+const searchGenders = async (req, res) => {
+  try {
+    const products = await Product.find({ gender: { $exists: true, $ne: "" } })
+      .select("gender")
+      .lean();
+
+    const counts = { male: 0, female: 0, kids: 0, unisex: 0 };
+    for (const p of products) {
+      const canonical = normalizeGender(p.gender);
+      if (canonical && counts[canonical] !== undefined) {
+        counts[canonical] += 1;
+      }
+    }
+
+    const genders = CANONICAL.map((id) => ({
+      id,
+      label: GENDER_LABELS[id],
+      count: counts[id],
+    }));
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      genders,
+    });
+  } catch (error) {
+    console.error("Error fetching genders:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "An error occurred while fetching genders",
+      error: error.message,
+    });
+  }
+};
+
 const querySearch = async (req, res) => {
   res.json({ msg: "hello" });
 };
@@ -327,23 +375,23 @@ const searchBrand = async (req, res) => {
   try {
     // Aggregate to get unique brands with their latest product date
     const brands = await Product.aggregate([
-      // Group by brand and find the latest product for each
+      {
+        $match: {
+          brand: { $exists: true, $type: "string", $ne: "" },
+        },
+      },
       {
         $group: {
-          _id: "$brand",
+          _id: { $toUpper: "$brand" },
           latestProduct: { $max: "$createdAt" },
         },
       },
-      
-      // Sort by latest product date (most recent first)
+      { $match: { _id: { $ne: "" } } },
       { $sort: { latestProduct: -1 } },
-      
-      // Project only the brand name
       { $project: { _id: 0, brand: "$_id" } },
     ]);
 
-    // Extract brand names into a simple array
-    const brandList = brands.map((b) => b.brand);
+    const brandList = brands.map((b) => b.brand).filter(Boolean);
 
     res.status(200).json({
       success: true,
@@ -414,6 +462,7 @@ module.exports = {
   searchProduct,
   searchCategory,
   searchProductsByCategory,
+  searchGenders,
   querySearch,
   searchArticle,
   searchBrand,
