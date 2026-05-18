@@ -27,4 +27,37 @@ const getCurrentUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user });
 };
 
-module.exports = { getAllUsers, getSingleUser, getCurrentUser };
+const updateCurrentUser = async (req, res) => {
+  const { name, shopName, address } = req.body;
+  const user = await User.findOne({ _id: req.user.userId });
+  if (!user) {
+    throw new CustomError.NotFoundError("No user found for this token");
+  }
+
+  if (name !== undefined) {
+    const trimmed = String(name).trim();
+    if (trimmed.length < 3) {
+      throw new CustomError.BadRequestError(
+        "Name must be at least 3 characters."
+      );
+    }
+    user.name = trimmed;
+  }
+  if (shopName !== undefined) {
+    user.shopName = String(shopName).trim();
+  }
+  if (address !== undefined) {
+    user.address = String(address).trim();
+  }
+
+  await user.save();
+  const safe = await User.findOne({ _id: user._id }).select("-password");
+  res.status(StatusCodes.OK).json({ user: safe, msg: "Profile updated." });
+};
+
+module.exports = {
+  getAllUsers,
+  getSingleUser,
+  getCurrentUser,
+  updateCurrentUser,
+};

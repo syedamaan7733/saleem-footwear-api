@@ -301,9 +301,11 @@ const searchProduct = async (req, res) => {
 
     // Execute the query with pagination
     const products = await Product.find(searchQuery)
-      .select("brand article category gender images") // Only select the productName field
-      .skip(skip) // Skip the appropriate number of results
-      .limit(limit); // Limit the number of results returned
+      .select(
+        "brand article category gender images itemSet colors colorsStock price inStock"
+      )
+      .skip(skip)
+      .limit(limit);
 
     // Get the total count of matching documents
     const total = await Product.countDocuments(searchQuery);

@@ -10,8 +10,13 @@ const {
 } = require("../utils");
 
 const register = async (req, res) => {
-  // scopping data from upcomming request
   const { name, shopName, password, address, phone } = req.body;
+
+  if (!phone || !password) {
+    throw new CustomError.BadRequestError(
+      "Please provide phone number and password."
+    );
+  }
 
   const isValidNum = validateIndianMobileNumber(phone);
 
@@ -31,14 +36,18 @@ const register = async (req, res) => {
   const isFistAdmin = (await User.countDocuments({})) === 0;
   const role = isFistAdmin ? "admin" : "user";
 
-  // creating a new User
+  const displayName =
+    typeof name === "string" && name.trim().length >= 3
+      ? name.trim()
+      : `Dealer ${String(phone).slice(-4)}`;
+
   const user = await User.create({
-    name,
+    name: displayName,
     phone,
-    shopName,
+    shopName: typeof shopName === "string" ? shopName.trim() : "",
     password,
     role,
-    address,
+    address: typeof address === "string" ? address.trim() : "",
   });
 
   // extracting user data and createing cookie for forwarding as response

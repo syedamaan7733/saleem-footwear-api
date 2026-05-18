@@ -17,7 +17,8 @@ const userSchema = new mongoose.Schema({
   },
   shopName: {
     type: String,
-    required: [true, "Shop name must required."],
+    default: "",
+    maxlength: 100,
   },
   password: {
     type: String,
@@ -31,8 +32,8 @@ const userSchema = new mongoose.Schema({
   },
   address: {
     type: String,
-    required: [true, "Please provide the address."],
-    maxlength: 100,
+    default: "",
+    maxlength: 200,
   },
 });
 
