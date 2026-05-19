@@ -46,6 +46,21 @@ const orderSchema = new mongoose.Schema({
     enum: ["pending", "processing", "shipped", "delivered"],
     default: "pending",
   },
+  deliveryAddress: {
+    type: String,
+    default: "",
+    maxlength: 200,
+  },
+  pincode: {
+    type: String,
+    default: "",
+    maxlength: 10,
+  },
+  landmark: {
+    type: String,
+    default: "",
+    maxlength: 100,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

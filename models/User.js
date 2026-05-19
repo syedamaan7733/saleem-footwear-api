@@ -35,6 +35,21 @@ const userSchema = new mongoose.Schema({
     default: "",
     maxlength: 200,
   },
+  deliveryAddress: {
+    type: String,
+    default: "",
+    maxlength: 200,
+  },
+  pincode: {
+    type: String,
+    default: "",
+    maxlength: 10,
+  },
+  landmark: {
+    type: String,
+    default: "",
+    maxlength: 100,
+  },
 });
 
 userSchema.pre("save", async function () {

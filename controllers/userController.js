@@ -28,7 +28,8 @@ const getCurrentUser = async (req, res) => {
 };
 
 const updateCurrentUser = async (req, res) => {
-  const { name, shopName, address } = req.body;
+  const { name, shopName, address, deliveryAddress, pincode, landmark } =
+    req.body;
   const user = await User.findOne({ _id: req.user.userId });
   if (!user) {
     throw new CustomError.NotFoundError("No user found for this token");
@@ -48,6 +49,15 @@ const updateCurrentUser = async (req, res) => {
   }
   if (address !== undefined) {
     user.address = String(address).trim();
+  }
+  if (deliveryAddress !== undefined) {
+    user.deliveryAddress = String(deliveryAddress).trim();
+  }
+  if (pincode !== undefined) {
+    user.pincode = String(pincode).trim();
+  }
+  if (landmark !== undefined) {
+    user.landmark = String(landmark).trim();
   }
 
   await user.save();

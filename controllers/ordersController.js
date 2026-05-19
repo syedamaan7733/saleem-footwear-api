@@ -2,16 +2,71 @@ const CustomError = require("../errors");
 const { StatusCodes } = require("http-status-codes");
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
+const User = require("../models/User");
+
+function resolveDelivery(user, body) {
+  const useShop =
+    body.useShopAddress === true ||
+    body.useShopAddress === "true" ||
+    (body.useShopAddress !== false &&
+      body.useShopAddress !== "false" &&
+      !body.deliveryAddress?.trim());
+
+  if (useShop) {
+    const shopAddr = user.address?.trim();
+    if (!shopAddr) {
+      throw new CustomError.BadRequestError(
+        "Shop address is not set. Add a delivery address to continue."
+      );
+    }
+    return {
+      deliveryAddress: shopAddr,
+      pincode: user.pincode?.trim() || "",
+      landmark: user.landmark?.trim() || "",
+    };
+  }
+
+  const deliveryAddress = body.deliveryAddress?.trim();
+  const pincode = body.pincode?.trim();
+  if (!deliveryAddress) {
+    throw new CustomError.BadRequestError("Delivery address is required.");
+  }
+  if (!pincode) {
+    throw new CustomError.BadRequestError("Pincode is required.");
+  }
+  return {
+    deliveryAddress,
+    pincode,
+    landmark: body.landmark?.trim() || "",
+  };
+}
 
 // creating order
 const createOrder = async (req, res) => {
   const userId = req.user.userId;
 
   try {
+    const user = await User.findOne({ _id: userId });
+    if (!user) {
+      throw new CustomError.NotFoundError("User not found");
+    }
+
     const cart = await Cart.findOne({ userId }).populate("items.productId");
 
     if (!cart || cart.items.length === 0) {
       throw new CustomError.NotFoundError("Cart is empty or not found", 404);
+    }
+
+    const delivery = resolveDelivery(user, req.body);
+
+    if (
+      req.body.useShopAddress === false ||
+      req.body.useShopAddress === "false"
+    ) {
+      user.deliveryAddress = delivery.deliveryAddress;
+      user.pincode = delivery.pincode;
+      user.landmark = delivery.landmark;
+      await user.save();
     }
 
     const newOrder = await Order.create({
@@ -19,6 +74,9 @@ const createOrder = async (req, res) => {
       items: cart.items,
       totalPrice: cart.totalPrice,
       totalItems: cart.totalItems,
+      deliveryAddress: delivery.deliveryAddress,
+      pincode: delivery.pincode,
+      landmark: delivery.landmark,
     });
 
     await Cart.findOneAndUpdate(
@@ -28,7 +86,10 @@ const createOrder = async (req, res) => {
 
     const populatedOrder = await Order.findById(newOrder._id)
       .populate("items.productId", "brand article category gender")
-      .populate("userId", "name phone shopName address");
+      .populate(
+        "userId",
+        "name phone shopName address deliveryAddress pincode landmark"
+      );
 
     res.status(StatusCodes.CREATED).json({
       success: true,
@@ -36,8 +97,8 @@ const createOrder = async (req, res) => {
       data: populatedOrder,
     });
   } catch (error) {
+    if (error.statusCode) throw error;
     console.log(error);
-
     throw new CustomError.BadRequestError("Something went wrong.");
   }
 };
