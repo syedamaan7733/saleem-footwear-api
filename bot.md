@@ -213,3 +213,6 @@ Error response format:
   - Added color explosion for category items
   - Added brand, color, and material fields to items
   - Optimized with database indexes
+
+
+Bot will be depricated soon!!!
