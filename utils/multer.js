@@ -4,17 +4,8 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs-extra");
 const { v6: uuidv6, v4: uuidv4 } = require("uuid");
-const cloudinary = require("cloudinary").v2;
-const CustomError = require("../errors");
 const { StatusCodes } = require("http-status-codes");
-const { log } = require("console");
-const { type } = require("os");
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDNARY_NAME,
-  api_key: process.env.CLOUDNARY_API_KEY,
-  api_secret: process.env.CLOUDNARY_API_SECRET,
-});
+const { uploadToCloudinary } = require("./cloudinaryUpload");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -47,42 +38,6 @@ const deleteTempFiles = (files) => {
       if (err) console.error(`Failed to delete the ${filePath}`, err);
       else console.log(`Deleted temp file: ${filePath}`);
     });
-  });
-};
-
-const uploadToCloudinary = (file, retryCount = 3) => {
-  return new Promise((resolve, reject) => {
-    const attemptUpload = (attemptsLeft) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder:
-            process.env.DEV === "development"
-              ? "saleem-test"
-              : "salim_api_product_images",
-          timeout: 20000,
-        },
-        (error, result) => {
-          if (error) {
-            if (attemptsLeft > 0) {
-              console.log(
-                `Retrying upload... Attempts left: ${attemptsLeft - 1}`
-              );
-              return attemptUpload(attemptsLeft - 1); // Retry the upload
-            }
-            return reject(
-              new CustomError.BadRequestError(
-                "Something went wrong while uploading image into the cloud.",
-                error.message
-              )
-            );
-          }
-          resolve(result.secure_url); // Resolve with the result from Cloudinary
-        }
-      );
-      stream.end(file.buffer); // End the stream with the file buffer
-    };
-
-    attemptUpload(retryCount); // Start with the defined retry count
   });
 };
 

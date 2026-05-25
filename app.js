@@ -88,6 +88,7 @@ const orderRouter = require("./routes/orderRoutes");
 const cartRouter = require("./routes/cartRoutes");
 const searchRouter = require("./routes/searchRoute");
 const botRouter = require("./routes/botRoutes");
+const promotionRouter = require("./routes/promotionRoutes");
 const uploadImgRouter = require("./utils/multer");
 
 app.use("/api/v1", uploadImgRouter);
@@ -97,6 +98,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/order", orderRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/search", searchRouter);
+app.use("/api/v1/promotions", promotionRouter);
 app.use("/bot", botRouter);
 
 
