@@ -4,6 +4,7 @@ const express = require("express");
 const rateLimit = require("express-rate-limit");
 
 const app = express();
+const packageInfo = require("./package.json");
 
 // Packages
 const cors = require("cors");
@@ -72,11 +73,15 @@ const limiter = rateLimit({
   max: 200,
 });
 app.use(limiter);
+app.use((req, res, next) => {
+  res.setHeader("X-API-Version", packageInfo.version);
+  next();
+});
 
 app.get("/", (req, res) => {
   res.json({
     status: "healthy",
-    version: "1.5.45",
+    version: packageInfo.version,
     uptime: process.uptime(),
   });
 });

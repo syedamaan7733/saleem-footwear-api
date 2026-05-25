@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "release": "semantic-release --no-ci",
+    "release:dry": "semantic-release --dry-run --no-ci",
+    "release:init": "node scripts/bootstrap-release-tag.cjs",
+    "version:check": "node -p \"'Current version: v' + require('./package.json').version\""
   },
   "author": "Syed Amaan Ali",
   "license": "ISC",
@@ -31,5 +35,11 @@
     "twilio": "^5.2.2",
     "uuid": "^10.0.0",
     "validator": "^13.12.0"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/npm": "^13.1.5",
+    "semantic-release": "^25.0.3"
   }
 }
