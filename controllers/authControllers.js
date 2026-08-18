@@ -65,37 +65,55 @@ const register = async (req, res) => {
     .json({ tokenUser, msg: "You have been registered. Please login!" });
 };
 
+const LOCK_MAX_ATTEMPTS = 10;
+const LOCK_WINDOW_MS = 5 * 60 * 1000;
+
 const logIn = async (req, res) => {
-  const { identifier, password } = req.body;
-  if (!identifier || !password) {
+  const { identifier } = req.body;
+  const credential = req.body.pin ?? req.body.password;
+  if (!identifier || !credential) {
     throw new CustomError.BadRequestError(
-      "Please provide Credentials and password"
+      "Please provide phone/email and PIN"
     );
   }
+
   const isEmail = validator.isEmail(identifier);
-  // console.log(isEmail);
-  let user;
-  if (isEmail) {
-    user = await User.findOne({ email: identifier });
-  } else {
-    user = await User.findOne({ phone: identifier });
-  }
+  const user = isEmail
+    ? await User.findOne({ email: identifier })
+    : await User.findOne({ phone: identifier });
+
   if (!user) {
     throw new CustomError.UnauthenticatedError("Invalid Credential");
   }
-  // checking the password
-  const isPasswordCorrect = await user.comparePassword(password);
-  if (!isPasswordCorrect) {
-    throw new CustomError.UnauthenticatedError("Invalid Password");
+
+  // Locked out?
+  if (user.lockUntil && user.lockUntil.getTime() > Date.now()) {
+    const mins = Math.ceil((user.lockUntil.getTime() - Date.now()) / 60000);
+    throw new CustomError.UnauthenticatedError(
+      `Too many attempts. Try again in ${mins} minute(s).`
+    );
+  }
+
+  const isCorrect = await user.comparePassword(credential);
+  if (!isCorrect) {
+    user.failedPinAttempts = (user.failedPinAttempts || 0) + 1;
+    if (user.failedPinAttempts >= LOCK_MAX_ATTEMPTS) {
+      user.lockUntil = new Date(Date.now() + LOCK_WINDOW_MS);
+      user.failedPinAttempts = 0;
+    }
+    await user.save();
+    throw new CustomError.UnauthenticatedError("Invalid PIN");
+  }
+
+  // success — clear any lock state
+  if (user.failedPinAttempts !== 0 || user.lockUntil !== null) {
+    user.failedPinAttempts = 0;
+    user.lockUntil = null;
+    await user.save();
   }
 
   const userToken = createTokenUser(user);
   const token = createJWT({ payload: userToken });
-  // res.cookie("token", "logout", {
-  //   httpOnly: true,
-  //   secure: process.env.NODEE_ENV === "production",
-  //   expires: new Date.now() + 1000 * 60 * 60 * 24 * 300,
-  // });
   res.status(StatusCodes.OK).json({ token, userToken });
 };
 
