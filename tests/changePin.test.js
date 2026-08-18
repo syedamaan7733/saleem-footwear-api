@@ -39,7 +39,7 @@ describe("change-pin", () => {
       .patch(`${base}/change-pin`)
       .set("Authorization", `Bearer ${token}`)
       .send({ currentPin: "000000", newPin: "112233" });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(400);
   });
 
   it("rejects a badly formatted new pin", async () => {

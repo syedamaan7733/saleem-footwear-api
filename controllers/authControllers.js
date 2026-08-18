@@ -148,7 +148,7 @@ const changePin = async (req, res) => {
 
   const isCorrect = await user.comparePassword(currentPin);
   if (!isCorrect) {
-    throw new CustomError.UnauthenticatedError("Current PIN is incorrect.");
+    throw new CustomError.BadRequestError("Current PIN is incorrect.");
   }
 
   user.password = newPin; // pre-save hook re-hashes
