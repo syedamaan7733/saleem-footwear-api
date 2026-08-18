@@ -65,9 +65,22 @@ const updateCurrentUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user: safe, msg: "Profile updated." });
 };
 
+const resetUserPin = async (req, res) => {
+  const user = await User.findOne({ _id: req.params.id });
+  if (!user) {
+    throw new CustomError.NotFoundError("User not found.");
+  }
+  user.password = "966900"; // temp pin, pre-save hook hashes it
+  user.failedPinAttempts = 0;
+  user.lockUntil = null;
+  await user.save();
+  res.status(StatusCodes.OK).json({ msg: "PIN reset to temporary 966900." });
+};
+
 module.exports = {
   getAllUsers,
   getSingleUser,
   getCurrentUser,
   updateCurrentUser,
+  resetUserPin,
 };

@@ -5,8 +5,12 @@ const {
   getSingleUser,
   getCurrentUser,
   updateCurrentUser,
+  resetUserPin,
 } = require("../controllers/userController");
-const { authenticateUser } = require("../middleware/authentication");
+const {
+  authenticateUser,
+  authorizePermission,
+} = require("../middleware/authentication");
 
 router
   .route("/me")
@@ -14,6 +18,10 @@ router
   .patch(authenticateUser, updateCurrentUser);
 
 router.route("/").get(authenticateUser, getAllUsers);
+
+router
+  .route("/:id/reset-pin")
+  .patch(authenticateUser, authorizePermission("admin"), resetUserPin);
 
 router.route("/:id").get(authenticateUser, getSingleUser);
 
