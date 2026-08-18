@@ -112,9 +112,12 @@ Added to `routes/userRoutes.js`; handler in `controllers/userController.js`.
 
 `scripts/seed-pins.cjs` (new): connects via existing `db/connect`, and for
 **every** existing user sets `password = bcrypt(966900)` and initializes
-`failedPinAttempts = 0`, `lockUntil = null`. Idempotent, run once
-manually. Uses the model's hashing (load doc, set `password`, `.save()`)
-so hashing is consistent.
+`failedPinAttempts = 0`, `lockUntil = null`. **Not idempotent** — it is a
+destructive, run-exactly-once seed (re-running would reset dealers who
+already changed their PIN back to the shared temp value), guarded by a
+required `SEED_PINS_CONFIRM` env var so it cannot fire by accident. Uses
+the model's hashing (load doc, set `password`, `.save()`) so hashing is
+consistent.
 
 ## 5. Website (`saleem-footwear`)
 
@@ -163,8 +166,11 @@ not in scope.
   lockout expiry, `pin` vs `password` field), change-pin (happy, wrong
   current, bad format, same-as-current), admin reset (admin allowed,
   non-admin forbidden), register PIN validation.
-- **Migration:** run against a scratch DB copy; assert every user logs in
-  with `966900` afterward and lockout fields initialized.
+- **Migration:** destructive, run-once (not idempotent); run against a
+  scratch DB copy with `SEED_PINS_CONFIRM` set, and assert every user
+  logs in with `966900` afterward and lockout fields initialized. Also
+  assert it exits 1 without touching the DB when the confirm var is
+  missing/wrong.
 - **Clients:** manual smoke of login/register/change-pin on web and
   mobile; verify old-build compatibility by posting `password` to login.
 
