@@ -5,6 +5,7 @@ const {
   orderHistory,
   updateOrderStatus,
   getAllOrders,
+  getAdminStats,
   getSingleOrder,
 } = require("../controllers/ordersController");
 const {
@@ -17,6 +18,9 @@ router
   .post(authenticateUser, createOrder)
   .get([authenticateUser, authorizePermission("admin")], getAllOrders);
 router.route("/history").get(authenticateUser, orderHistory);
+router
+  .route("/admin/stats")
+  .get([authenticateUser, authorizePermission("admin")], getAdminStats);
 router.route("/:orderId").get(authenticateUser, getSingleOrder);
 router
   .route("/status/:orderId")

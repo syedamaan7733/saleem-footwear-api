@@ -177,26 +177,95 @@ const orderHistory = async (req, res) => {
   }
 };
 
+// Known order statuses across both the mobile (schema enum) and the web admin
+// (accepted/rejected) vocabularies. Accepted as filter values so no valid
+// status is silently ignored.
+const ORDER_STATUSES = [
+  "pending",
+  "processing",
+  "shipped",
+  "delivered",
+  "accepted",
+  "rejected",
+];
+
+const countsByStatus = (rows) =>
+  rows.reduce((acc, row) => {
+    acc[row._id] = row.count;
+    return acc;
+  }, {});
+
 const getAllOrders = async (req, res) => {
-  try {
-    const orders = await Order.find()
-      .populate({ path: "userId", select: "name phone shopName" })
-      .populate("items.productId")
-      .sort({ createdAt: -1 });
+  const { status, page, limit } = req.query;
 
-    if (orders.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ message: "No orders found" });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: orders,
-    });
-  } catch (error) {
-    throw new CustomError.BadRequestError("Something went wrong.");
+  const filter = {};
+  if (status && ORDER_STATUSES.includes(String(status).toLowerCase())) {
+    filter.status = String(status).toLowerCase();
   }
+
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+  const skip = (pageNum - 1) * limitNum;
+
+  const [orders, total, statusCounts] = await Promise.all([
+    Order.find(filter)
+      .populate({ path: "userId", select: "name phone shopName address" })
+      .populate("items.productId")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum),
+    Order.countDocuments(filter),
+    Order.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
+  ]);
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    data: orders,
+    meta: {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      totalPages: Math.ceil(total / limitNum) || 0,
+      counts: countsByStatus(statusCounts),
+    },
+  });
+};
+
+const getAdminStats = async (req, res) => {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const [statusCounts, todayOrders, revenueAgg, totalDealers] =
+    await Promise.all([
+      Order.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
+      Order.countDocuments({ createdAt: { $gte: startOfToday } }),
+      Order.aggregate([
+        {
+          $match: {
+            status: { $in: ["accepted", "processing", "shipped", "delivered"] },
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$totalPrice" } } },
+      ]),
+      User.countDocuments({ role: "user" }),
+    ]);
+
+  const counts = countsByStatus(statusCounts);
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    data: {
+      pending: counts.pending || 0,
+      accepted: counts.accepted || 0,
+      rejected: counts.rejected || 0,
+      processing: counts.processing || 0,
+      shipped: counts.shipped || 0,
+      delivered: counts.delivered || 0,
+      todayOrders,
+      revenue: revenueAgg[0]?.total || 0,
+      totalDealers,
+    },
+  });
 };
 
 const getSingleOrder = async (req, res) => {
@@ -224,5 +293,6 @@ module.exports = {
   orderHistory,
   updateOrderStatus,
   getAllOrders,
+  getAdminStats,
   getSingleOrder,
 };

@@ -38,6 +38,7 @@ const getAllProducts = async (req, res) => {
     brand,
     material,
     inStock,
+    search,
     sortBy,
     sortOrder,
   } = req.query;
@@ -53,6 +54,13 @@ const getAllProducts = async (req, res) => {
   if (material) filter.material = material;
   if (inStock === "true" || inStock === "1") filter.inStock = true;
   if (inStock === "false" || inStock === "0") filter.inStock = false;
+
+  // Free-text search across the fields admins look up (article/brand/category).
+  const term = typeof search === "string" ? search.trim() : "";
+  if (term) {
+    const rx = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    filter.$or = [{ article: rx }, { brand: rx }, { category: rx }];
+  }
 
   const sort = resolveProductSort(sortBy, sortOrder);
 
