@@ -113,12 +113,14 @@ app.use(errorHandlerMiddleware);
 
 // Start server
 const port = process.env.PORT || 8000;
+
+module.exports = app;
+
 const start = async () => {
   try {
     await connectDB(process.env.MONGO_URI);
     app.listen(port, () => {
       console.log("db is live");
-
       console.log(`Server is listening on PORT:${port}`);
     });
   } catch (error) {
@@ -126,4 +128,6 @@ const start = async () => {
   }
 };
 
-start();
+if (require.main === module) {
+  start();
+}
