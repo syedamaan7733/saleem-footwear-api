@@ -132,9 +132,5 @@ if (require.main === module) {
   // Local/dev: run as the entry point — connect to the DB and listen.
   start();
 } else if (process.env.NODE_ENV !== "test") {
-  // Serverless (Vercel): app.js is imported as the request handler, so
-  // app.listen() is never reached and start() never runs. Establish the DB
-  // connection at cold start here, otherwise every DB route hangs → 504.
-  // Skipped under NODE_ENV=test, where the Jest harness owns the connection.
   connectDB(process.env.MONGO_URI).catch((error) => console.log(error));
 }
