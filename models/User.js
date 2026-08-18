@@ -50,6 +50,14 @@ const userSchema = new mongoose.Schema({
     default: "",
     maxlength: 100,
   },
+  failedPinAttempts: {
+    type: Number,
+    default: 0,
+  },
+  lockUntil: {
+    type: Date,
+    default: null,
+  },
 });
 
 userSchema.pre("save", async function () {
