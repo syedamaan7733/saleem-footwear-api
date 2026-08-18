@@ -7,15 +7,21 @@ const {
   createTokenUser,
   validateIndianMobileNumber,
   attach_ResTOCookie,
+  validatePin,
 } = require("../utils");
 
 const register = async (req, res) => {
-  const { name, shopName, password, address, phone } = req.body;
+  const { name, shopName, address, phone } = req.body;
+  const pin = req.body.pin ?? req.body.password;
 
-  if (!phone || !password) {
+  if (!phone || !pin) {
     throw new CustomError.BadRequestError(
-      "Please provide phone number and password."
+      "Please provide phone number and PIN."
     );
+  }
+
+  if (!validatePin(pin)) {
+    throw new CustomError.BadRequestError("PIN must be exactly 6 digits.");
   }
 
   const isValidNum = validateIndianMobileNumber(phone);
@@ -45,7 +51,7 @@ const register = async (req, res) => {
     name: displayName,
     phone,
     shopName: typeof shopName === "string" ? shopName.trim() : "",
-    password,
+    password: pin,
     role,
     address: typeof address === "string" ? address.trim() : "",
   });
