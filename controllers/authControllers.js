@@ -125,4 +125,38 @@ const logout = async (req, res) => {
   res.status(StatusCodes.OK).json({ msg: "user logged out!" });
 };
 
-module.exports = { register, logIn, logout };
+const changePin = async (req, res) => {
+  const { currentPin, newPin } = req.body;
+  if (!currentPin || !newPin) {
+    throw new CustomError.BadRequestError(
+      "Please provide current and new PIN."
+    );
+  }
+  if (!validatePin(newPin)) {
+    throw new CustomError.BadRequestError("New PIN must be exactly 6 digits.");
+  }
+  if (currentPin === newPin) {
+    throw new CustomError.BadRequestError(
+      "New PIN must be different from current PIN."
+    );
+  }
+
+  const user = await User.findOne({ _id: req.user.userId });
+  if (!user) {
+    throw new CustomError.UnauthenticatedError("Invalid Authentication...");
+  }
+
+  const isCorrect = await user.comparePassword(currentPin);
+  if (!isCorrect) {
+    throw new CustomError.UnauthenticatedError("Current PIN is incorrect.");
+  }
+
+  user.password = newPin; // pre-save hook re-hashes
+  user.failedPinAttempts = 0;
+  user.lockUntil = null;
+  await user.save();
+
+  res.status(StatusCodes.OK).json({ msg: "PIN updated successfully." });
+};
+
+module.exports = { register, logIn, logout, changePin };
