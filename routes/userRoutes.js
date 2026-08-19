@@ -17,7 +17,9 @@ router
   .get(authenticateUser, getCurrentUser)
   .patch(authenticateUser, updateCurrentUser);
 
-router.route("/").get(authenticateUser, getAllUsers);
+router
+  .route("/")
+  .get([authenticateUser, authorizePermission("admin")], getAllUsers);
 
 router
   .route("/:id/reset-pin")

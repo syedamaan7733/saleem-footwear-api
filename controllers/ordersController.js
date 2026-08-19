@@ -118,7 +118,7 @@ const updateOrderStatus = async (req, res) => {
     const order = await Order.findByIdAndUpdate(
       orderId,
       { status, updatedAt: Date.now() },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!order) {

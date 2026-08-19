@@ -43,7 +43,17 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "processing", "shipped", "delivered"],
+    // Includes the web-admin vocabulary (accepted/rejected) alongside the
+    // fulfilment states so status writes validate instead of silently storing
+    // out-of-enum values.
+    enum: [
+      "pending",
+      "processing",
+      "shipped",
+      "delivered",
+      "accepted",
+      "rejected",
+    ],
     default: "pending",
   },
   deliveryAddress: {
