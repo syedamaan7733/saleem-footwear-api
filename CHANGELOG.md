@@ -1,3 +1,15 @@
+# [2.3.0](https://github.com/syedamaan7733/saleem-footwear-api/compare/v2.2.0...v2.3.0) (2026-08-20)
+
+
+### Bug Fixes
+
+* restrict user list to admins and validate order status against enum ([44fe46b](https://github.com/syedamaan7733/saleem-footwear-api/commit/44fe46bba502fd2c578e4a5510062f2646d3ece3))
+
+
+### Features
+
+* admin order status filter, admin stats and product search endpoints ([df62d7f](https://github.com/syedamaan7733/saleem-footwear-api/commit/df62d7f6fa6dc02d8218da19829d62ced54afad4))
+
 # [2.2.0](https://github.com/syedamaan7733/saleem-footwear-api/compare/v2.1.0...v2.2.0) (2026-08-18)
 
 
